@@ -1,0 +1,20 @@
+cmake_minimum_required(VERSION 3.8)
+
+# Set the project name
+project(TextEditor)
+
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+if(MSVC) 
+add_compile_options(/arch:AVX2) #make sure SIMD optimizations take place
+endif()
+
+# set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE) #link time optimization
+
+# Include sub-projects.
+set(wxBUILD_SHARED OFF)
+set(wxBUILD_TESTS OFF)
+set(wxBUILD_SAMPLES OFF)
+set(wxBUILD_DEMOS OFF)
+add_subdirectory("external/wxWidgets")
+
+add_subdirectory("src")
