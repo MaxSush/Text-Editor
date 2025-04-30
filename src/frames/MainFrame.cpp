@@ -1,4 +1,5 @@
 #include "MainFrame.h"
+#include <wx/config.h>
 
 MainFrame::MainFrame(const std::string& name)
 	: wxFrame(NULL, wxID_ANY, name, wxDefaultPosition, { 900,700 }, wxCAPTION | wxCLOSE_BOX | wxMINIMIZE_BOX| wxMAXIMIZE_BOX |wxRESIZE_BORDER | wxNO_BORDER)
@@ -12,7 +13,6 @@ MainFrame::MainFrame(const std::string& name)
 	CreateMenubar();
 
 	notebook = new NotebookPanel(this);
-
 }
 
 void MainFrame::CreateMenubar()
@@ -21,62 +21,117 @@ void MainFrame::CreateMenubar()
 
 	// File
 	wxMenu* file = new wxMenu();
-	file->Append(wxID_NEW, "&New Tab\t Ctrl+N");
-	file->Append(wxID_OPEN, "&Open\t Ctrl+O");
+	file->Append(ID_NewTab, "New Tab\tCtrl+N");
+	file->Append(ID_OpenFile, "Open\tCtrl+O");
 	//
-	file->Append(wxID_ANY, "&Recent");
+	wxMenu* recent = new wxMenu();
+	recent->Append(ID_ClearHistory, "Clear History");
+	recent->AppendSeparator();
+	file->AppendSubMenu(recent, "Recent");
 	//
 	file->AppendSeparator();
-	file->Append(wxID_SAVE, "&Save\t Ctrl+S");
-	file->Append(wxID_SAVEAS, "&SaveAs\t Ctrl+Shift+S");
-	file->Append(wxID_ANY, "&Save All\t Ctrl+Alt+S");
+	file->Append(ID_Save, "Save\tCtrl+S");
+	file->Append(ID_SaveAs, "SaveAs\tCtrl+Shift+S");
+	file->Append(ID_SaveAll, "Save All\tCtrl+Alt+S");
 	file->AppendSeparator();
-	file->Append(wxID_CLOSE, "Close Tab\t Ctrl+W");
-	file->Append(wxID_EXIT, "Exit");
+	file->Append(ID_CloseTab, "Close Tab\tCtrl+W");
+	file->Append(ID_Exit, "Exit");
 
 	menubar->Append(file, "File");
 
 	// Edit
 	wxMenu* edit = new wxMenu();
-	edit->Append(wxID_UNDO, "&Undo\t Ctrl+Z");
-	edit->Append(wxID_REDO, "&Redo\t Ctrl+Y");
+	edit->Append(ID_Undo, "Undo\tCtrl+Z");
+	edit->Append(ID_Redo, "Redo\tCtrl+Y");
 	edit->AppendSeparator();
-	edit->Append(wxID_CUT, "&Cut\t Ctrl+X");
-	edit->Append(wxID_COPY, "&Copy\t Ctrl+C");
-	edit->Append(wxID_PASTE, "&Paste\t Ctrl+V");
-	edit->Append(wxID_DELETE, "&Delete\t Del");
+	edit->Append(ID_Cut, "Cut\tCtrl+X");
+	edit->Append(ID_Copy, "Copy\tCtrl+C");
+	edit->Append(ID_Paste, "Paste\tCtrl+V");
+	edit->Append(ID_Delete, "Delete\tDel");
 	edit->AppendSeparator();
-	edit->Append(wxID_FIND, "&Find\t Ctrl+F");
-	edit->Append(wxID_REPLACE, "&Replace\t Ctrl+H");
+	edit->Append(ID_Find, "Find\tCtrl+F");
+	edit->Append(ID_Replace, "Replace\tCtrl+H");
 	edit->AppendSeparator();
-	edit->Append(wxID_ANY, "&Font");
+	edit->Append(ID_Font, "Font");
 
 	menubar->Append(edit, "Edit");
 
 	// Edit
 	wxMenu* view = new wxMenu();
 	wxMenu* zoomSubMenu = new wxMenu();
-	zoomSubMenu->Append(wxID_ZOOM_IN, "&Zoom In\t Ctrl+plus");
-	zoomSubMenu->Append(wxID_ZOOM_OUT, "&Zoom Out\t Ctrl+minus");
-	zoomSubMenu->Append(wxID_ZOOM_100, "&Default Zoom (100%)\t Ctrl+0");
-	view->AppendSubMenu(zoomSubMenu, "&Zoom");
-	view->AppendCheckItem(wxID_ANY, "&Status Bar", "Display Status Bar");
-	view->AppendCheckItem(wxID_ANY, "&Word Warp");
+	zoomSubMenu->Append(ID_ZoomIn, "Zoom In\tCtrl+plus");
+	zoomSubMenu->Append(ID_ZoomOut, "Zoom Out\tCtrl+minus");
+	zoomSubMenu->Append(ID_ZoomReset, "Default Zoom (100%)\tCtrl+0");
+	view->AppendSubMenu(zoomSubMenu, "Zoom");
+	view->AppendCheckItem(ID_StatusBar, "Status Bar");
+	view->AppendCheckItem(ID_WordWrap, "Word Warp");
 
 	menubar->Append(view, "View");
 
 
 	SetMenuBar(menubar);
 
+	fileHistory.UseMenu(recent);
+	fileHistory.Load(*wxConfig::Get());
+
 	BindMenubarActions();
 }
 
 void MainFrame::BindMenubarActions()
 {
-	Bind(wxEVT_MENU, &MainFrame::OnNewTab, this, wxID_NEW);
+	// New Tab
+	Bind(wxEVT_MENU, &MainFrame::OnNewTab, this, ID_NewTab);
+	// Exit
+	Bind(wxEVT_MENU, [&](wxCommandEvent& e) 
+		{ Close(); } 
+		, ID_Exit);
+	// Open
+	Bind(wxEVT_MENU, &MainFrame::OnOpen, this, ID_OpenFile);
+	// Recents
+	Bind(wxEVT_MENU, [&](wxCommandEvent& e)
+		{
+			const auto historyId = e.GetId() - fileHistory.GetBaseId();
+			const wxString filepath = fileHistory.GetHistoryFile(historyId);
+			wxMessageBox("Opening: " + filepath);
+		},
+		fileHistory.GetBaseId(),
+		fileHistory.GetBaseId() + fileHistory.GetMaxFiles()
+	);
+	// Clear Recent
+	Bind(wxEVT_MENU, [&](wxCommandEvent& e) {
+		while (fileHistory.GetCount() > 0) 
+			fileHistory.RemoveFileFromHistory(0);
+		fileHistory.Save(*wxConfig::Get());
+		}, ID_ClearHistory);
+	// Save 
+	Bind(wxEVT_MENU, &MainFrame::OnSave, this, ID_Save);
+	Bind(wxEVT_MENU, &MainFrame::OnSaveAs, this, ID_SaveAs);
+
 }
 
 void MainFrame::OnNewTab(wxCommandEvent& e)
 {
 	notebook->CreateNewTab("Untitled.txt");
+}
+
+void MainFrame::OnOpen(wxCommandEvent&)
+{
+	wxFileDialog openFileDialog(this, "Open File", "", "", "Text Document (*.txt)|*.txt|All Files (*.*)|*.*", wxFD_FILE_MUST_EXIST | wxFD_OPEN);
+
+	if (openFileDialog.ShowModal() == wxID_OK) {
+		wxString filepath = openFileDialog.GetPath();
+		wxMessageBox("Opening: " + filepath);
+		fileHistory.AddFileToHistory(filepath);
+		fileHistory.Save(*wxConfig::Get());
+	}
+}
+
+void MainFrame::OnSave(wxCommandEvent&)
+{
+	notebook->SaveCurrentTab();
+}
+
+void MainFrame::OnSaveAs(wxCommandEvent&)
+{
+	notebook->SaveAsCurrentTab();
 }
