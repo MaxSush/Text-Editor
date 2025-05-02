@@ -8,6 +8,11 @@ NotebookPanel::NotebookPanel(wxWindow* parent)
 		RemoveTab();
 		e.Skip();
 		});
+	notebook->Bind(wxEVT_AUINOTEBOOK_PAGE_CHANGED, [&](wxAuiNotebookEvent& event) {
+		currentTab = GetCurrentTab();
+		currentTab->UpdateStatusbar();
+		}
+	);
 
 	wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
 	sizer->Add(notebook, 1, wxEXPAND);
@@ -19,6 +24,7 @@ void NotebookPanel::CreateNewTab(const wxString& filename)
 {
 	TextboxTab* tab = new TextboxTab(notebook, filename);
 	Openedtabs.push_back(tab);
+	currentTab = tab;
 }
 
 void NotebookPanel::SaveAllTab()

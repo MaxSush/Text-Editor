@@ -44,8 +44,10 @@ public:
 
 private:
     NotebookPanel* notebookPanel;
+    wxMenuBar* menubar;
 	wxFileHistory* fileHistory = nullptr;
-
+    wxStatusBar* statusBar = nullptr;
+    bool isStatusbar = true;
 
 	void CreateMenubar();
 	void BindMenubarActions();
@@ -56,5 +58,6 @@ private:
 	void OnClearRecents(wxCommandEvent&);
     void OnChangeFont(wxCommandEvent&);
     void OnSetDefaultFont(wxCommandEvent&);
+    void OnStatusbar(wxCommandEvent&);
 
 };

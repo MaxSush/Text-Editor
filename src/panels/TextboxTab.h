@@ -19,7 +19,6 @@ public:
 	void OnCopy();
 	void OnPaste();
 	void OnDelete();
-
 	void OnChangeFont(const wxFont& font);
 	void OnSetDefaultFont();
 	void OnResetFont();
@@ -27,8 +26,15 @@ public:
 	void OnFind();
 	void OnReplace();
 
+	void OnZoomIn();
+	void OnZoomOut();
+	void OnSetZoom();
+
+	void UpdateStatusbar();
+	void OnWordWrap(bool warp);
 
 private:
+	wxFrame* mainFrame = nullptr;
 	wxStyledTextCtrl* editor;
 	std::string filepath;
 	std::string filename;

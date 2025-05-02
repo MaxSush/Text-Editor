@@ -5,10 +5,15 @@ TextboxTab::TextboxTab(wxAuiNotebook* parent, const wxString& filename)
 	wxPanel(parent, wxID_ANY),
 	filename(filename)
 {
+	mainFrame = wxDynamicCast(wxGetTopLevelParent(this), wxFrame);
+
 	editor = new wxStyledTextCtrl(this, wxID_ANY);
 	editor->SetWrapMode(wxSTC_WRAP_WORD);
 
-	editor->Bind(wxEVT_STC_CHANGE, [=](wxStyledTextEvent&) {
+	editor->Bind(wxEVT_STC_UPDATEUI, [&](wxStyledTextEvent&) {
+		UpdateStatusbar();
+		});
+	editor->Bind(wxEVT_STC_CHANGE, [&](wxStyledTextEvent&) {
 		isModified = true;
 		UpdateTabLabel();
 		});
@@ -23,6 +28,8 @@ TextboxTab::TextboxTab(wxAuiNotebook* parent, const wxString& filename)
 		config->Read("Font/PointSize", &pointSize, 14);
 		config->Read("Font/Bold", &bold, false);
 		config->Read("Font/Italic", &italic, false);
+		config->Read("Font/Italic", &italic, false);
+
 
 		wxFont font(pointSize, wxFONTFAMILY_MODERN, (italic) ? wxFONTSTYLE_ITALIC : wxFONTSTYLE_NORMAL, (bold) ? wxFONTWEIGHT_BOLD : wxFONTWEIGHT_NORMAL);
 		font.SetFaceName(faceName);
@@ -118,6 +125,33 @@ void TextboxTab::OnResetFont()
 	editor->StyleSetFont(wxSTC_STYLE_DEFAULT, font);
 	editor->StyleClearAll();
 	OnSetDefaultFont();
+}
+
+void TextboxTab::OnZoomIn()
+{
+	editor->ZoomIn();
+}
+
+void TextboxTab::OnZoomOut()
+{
+	editor->ZoomOut();
+}
+
+void TextboxTab::OnSetZoom()
+{
+	editor->SetZoom(0);
+}
+
+void TextboxTab::UpdateStatusbar()
+{
+	int line = editor->GetCurrentLine() + 1;
+	int col = editor->GetColumn(editor->GetCurrentPos()) + 1;
+	mainFrame->SetStatusText(wxString::Format("Line: %d  Col: %d", line, col));
+}
+
+void TextboxTab::OnWordWrap(bool wrap)
+{
+	editor->SetWrapMode(wrap ? wxSTC_WRAP_WORD : wxSTC_WRAP_NONE);
 }
 
 void TextboxTab::SaveFile(const std::string& filepath)

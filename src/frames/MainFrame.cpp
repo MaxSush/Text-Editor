@@ -9,8 +9,12 @@ MainFrame::MainFrame(const std::string& name)
 	//icon.LoadFile("path/to/icon.ico", wxBITMAP_TYPE_ICO);  // Load icon from file
 	//this->SetIcon(icon);
 
-	CreateStatusBar();
-	//SetStatusText("Welcome to wxWidgets!");
+	statusBar = CreateStatusBar(1);
+	wxConfigBase* config = wxConfig::Get();
+	config->Read("StatusBar", &isStatusbar, true);
+	if (!isStatusbar)
+		statusBar->Hide();
+	Layout();
 
 	notebookPanel = new NotebookPanel(this);
 	fileHistory = new wxFileHistory(10);
@@ -25,7 +29,7 @@ MainFrame::~MainFrame()
 
 void MainFrame::CreateMenubar()
 {
-	wxMenuBar* menubar = new wxMenuBar();
+	menubar = new wxMenuBar();
 
 	// File
 	wxMenu* file = new wxMenu();
@@ -69,17 +73,17 @@ void MainFrame::CreateMenubar()
 	// Edit
 	wxMenu* view = new wxMenu();
 	wxMenu* zoomSubMenu = new wxMenu();
-	zoomSubMenu->Append(ID_ZoomIn, "Zoom In\tCtrl+plus");
-	zoomSubMenu->Append(ID_ZoomOut, "Zoom Out\tCtrl+minus");
+	zoomSubMenu->Append(ID_ZoomIn, "Zoom In\tCtrl+=");
+	zoomSubMenu->Append(ID_ZoomOut, "Zoom Out\tCtrl+-");
 	zoomSubMenu->Append(ID_ZoomReset, "Default Zoom (100%)\tCtrl+0");
 	view->AppendSubMenu(zoomSubMenu, "Zoom");
 	view->AppendCheckItem(ID_StatusBar, "Status Bar");
 	view->AppendCheckItem(ID_WordWrap, "Word Warp");
 
 	menubar->Append(view, "View");
-
-
 	SetMenuBar(menubar);
+
+	menubar->Check(ID_WordWrap, true);
 
 	fileHistory->UseMenu(recent);
 	fileHistory->Load(*wxConfig::Get());
@@ -93,6 +97,7 @@ void MainFrame::BindMenubarActions()
 
 	// New Tab
 	Bind(wxEVT_MENU, [&](wxCommandEvent& e) {
+		menubar->Check(ID_WordWrap, true);
 		notebookPanel->CreateNewTab("Untitled.txt");
 		}, ID_NewTab);
 	// Exit
@@ -107,12 +112,12 @@ void MainFrame::BindMenubarActions()
 	Bind(wxEVT_MENU, &MainFrame::OnClearRecents, this, ID_ClearHistory);
 	// Save 
 	Bind(wxEVT_MENU, [&](wxCommandEvent& e) {
-		TextboxTab* tab = notebookPanel->GetCurrentTab();
+		TextboxTab* tab = notebookPanel->currentTab;
 		tab->OnSaveFile();
 		}, ID_Save);
 	// Save As
 	Bind(wxEVT_MENU, [&](wxCommandEvent& e) {
-		TextboxTab* tab = notebookPanel->GetCurrentTab();
+		TextboxTab* tab = notebookPanel->currentTab;
 		tab->OnSaveAsFile();
 		}, ID_SaveAs);
 	// Save All
@@ -128,37 +133,37 @@ void MainFrame::BindMenubarActions()
 
 	// Undo
 	Bind(wxEVT_MENU, [&](wxCommandEvent& e) {
-		TextboxTab* tab = notebookPanel->GetCurrentTab();
+		TextboxTab* tab = notebookPanel->currentTab;
 		tab->OnUndo();
 		}, ID_Undo);
 
 	// Redo
 	Bind(wxEVT_MENU, [&](wxCommandEvent& e) {
-		TextboxTab* tab = notebookPanel->GetCurrentTab();
+		TextboxTab* tab = notebookPanel->currentTab;
 		tab->OnRedo();
 		}, ID_Redo);
 
 	// Cut
 	Bind(wxEVT_MENU, [&](wxCommandEvent& e) {
-		TextboxTab* tab = notebookPanel->GetCurrentTab();
+		TextboxTab* tab = notebookPanel->currentTab;
 		tab->OnCut();
 		}, ID_Cut);
 
 	// Copy
 	Bind(wxEVT_MENU, [&](wxCommandEvent& e) {
-		TextboxTab* tab = notebookPanel->GetCurrentTab();
+		TextboxTab* tab = notebookPanel->currentTab;
 		tab->OnCopy();
 		}, ID_Copy);
 
 	// Paste
 	Bind(wxEVT_MENU, [&](wxCommandEvent& e) {
-		TextboxTab* tab = notebookPanel->GetCurrentTab();
+		TextboxTab* tab = notebookPanel->currentTab;
 		tab->OnPaste();
 		}, ID_Paste);
 
 	// Delete
 	Bind(wxEVT_MENU, [&](wxCommandEvent& e) {
-		TextboxTab* tab = notebookPanel->GetCurrentTab();
+		TextboxTab* tab = notebookPanel->currentTab;
 		tab->OnDelete();
 		}, ID_Delete);
 
@@ -166,9 +171,29 @@ void MainFrame::BindMenubarActions()
 	Bind(wxEVT_MENU, &MainFrame::OnChangeFont, this, ID_Font);
 	Bind(wxEVT_MENU, &MainFrame::OnSetDefaultFont, this, ID_SetFont);
 	Bind(wxEVT_MENU, [&](wxCommandEvent& e) {
-		TextboxTab* tab = notebookPanel->GetCurrentTab();
-		tab->OnResetFont();
+		notebookPanel->currentTab->OnResetFont();
 		}, ID_ResetFont);
+
+	// Zoom In
+	Bind(wxEVT_MENU, [&](wxCommandEvent& e) {
+		notebookPanel->currentTab->OnZoomIn();
+		}, ID_ZoomIn);
+
+	// Zoom Ot
+	Bind(wxEVT_MENU, [&](wxCommandEvent& e) {
+		notebookPanel->currentTab->OnZoomOut();
+		}, ID_ZoomOut);
+
+	// Set Zoom
+	Bind(wxEVT_MENU, [&](wxCommandEvent& e) {
+		notebookPanel->currentTab->OnSetZoom();
+		}, ID_ZoomReset);
+
+	// StatusBar
+	Bind(wxEVT_MENU, &MainFrame::OnStatusbar, this,  ID_StatusBar);
+	Bind(wxEVT_MENU, [&](wxCommandEvent& e) {
+		notebookPanel->currentTab->OnWordWrap(e.IsChecked());
+		}, ID_WordWrap);
 }
 
 
@@ -203,7 +228,7 @@ void MainFrame::OnChangeFont(wxCommandEvent& e)
 	wxFontDialog fontDialog(this);
 	if (fontDialog.ShowModal() == wxID_OK) {
 		wxFont font = fontDialog.GetFontData().GetChosenFont();
-		TextboxTab* tab = notebookPanel->GetCurrentTab();
+		TextboxTab* tab = notebookPanel->currentTab;
 		if (tab)
 			tab->OnChangeFont(font);
 	}
@@ -211,7 +236,19 @@ void MainFrame::OnChangeFont(wxCommandEvent& e)
 
 void MainFrame::OnSetDefaultFont(wxCommandEvent& e)
 {
-	TextboxTab* tab = notebookPanel->GetCurrentTab();
+	TextboxTab* tab = notebookPanel->currentTab;
 	tab->OnSetDefaultFont();
 	wxMessageBox("The current font has been set as the default. \n Please restart the application for the changes to take effect throughout.");
+}
+
+void MainFrame::OnStatusbar(wxCommandEvent& e)
+{
+	bool show = e.IsChecked();
+	statusBar->Show(show);
+	Layout(); // Recalculate layout when showing/hiding
+
+	isStatusbar = show;
+
+	wxConfigBase* config = wxConfig::Get();
+	config->Write("StatusBar", isStatusbar);
 }

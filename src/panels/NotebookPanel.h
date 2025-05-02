@@ -15,11 +15,12 @@ public:
 	void SaveAllTab();
 	void CloseCurrentTab();
 
-	TextboxTab* GetCurrentTab();
+	TextboxTab* currentTab = nullptr;
 
 private:
 	wxAuiNotebook* notebook;
 	std::vector<TextboxTab*> Openedtabs;
 
 	void RemoveTab();
+	TextboxTab* GetCurrentTab();
 };
