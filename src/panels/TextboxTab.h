@@ -3,6 +3,7 @@
 #include <wx/wx.h>
 #include <wx/stc/stc.h>
 #include <wx/aui/aui.h>
+#include <wx/config.h>
 
 class TextboxTab : public wxPanel
 {
@@ -11,6 +12,22 @@ public:
 
 	void OnSaveFile(); 
 	void OnSaveAsFile();
+
+	void OnUndo();
+	void OnRedo();
+	void OnCut();
+	void OnCopy();
+	void OnPaste();
+	void OnDelete();
+
+	void OnChangeFont(const wxFont& font);
+	void OnSetDefaultFont();
+	void OnResetFont();
+
+	void OnFind();
+	void OnReplace();
+
+
 private:
 	wxStyledTextCtrl* editor;
 	std::string filepath;

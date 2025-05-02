@@ -20,9 +20,13 @@ enum {
     ID_Copy,
     ID_Paste,
     ID_Delete,
+
     ID_Find,
     ID_Replace,
     ID_Font,
+    ID_SetFont,
+    ID_ResetFont,
+
     ID_StatusBar,
     ID_WordWrap,
     ID_ZoomIn,
@@ -36,17 +40,21 @@ class MainFrame : public wxFrame
 {
 public:
 	MainFrame(const std::string& name);
+    ~MainFrame();
 
 private:
-	NotebookPanel* notebook;
-	wxFileHistory fileHistory;
+    NotebookPanel* notebookPanel;
+	wxFileHistory* fileHistory = nullptr;
 
 
 	void CreateMenubar();
 	void BindMenubarActions();
 
-	void OnNewTab(wxCommandEvent&);
+
 	void OnOpen(wxCommandEvent&);
-	void OnSave(wxCommandEvent&);
-	void OnSaveAs(wxCommandEvent&);
+	void OnRecents(wxCommandEvent&);
+	void OnClearRecents(wxCommandEvent&);
+    void OnChangeFont(wxCommandEvent&);
+    void OnSetDefaultFont(wxCommandEvent&);
+
 };

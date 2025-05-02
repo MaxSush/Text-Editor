@@ -4,7 +4,10 @@ NotebookPanel::NotebookPanel(wxWindow* parent)
 	: wxPanel(parent, wxID_ANY)
 {
 	notebook = new wxAuiNotebook(this, wxID_ANY);
-	notebook->Bind(wxEVT_AUINOTEBOOK_PAGE_CLOSE, &NotebookPanel::OnNotebookTabClose, this);
+	notebook->Bind(wxEVT_AUINOTEBOOK_PAGE_CLOSE, [&](wxAuiNotebookEvent& e) {
+		RemoveTab();
+		e.Skip();
+		});
 
 	wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
 	sizer->Add(notebook, 1, wxEXPAND);
@@ -18,30 +21,29 @@ void NotebookPanel::CreateNewTab(const wxString& filename)
 	Openedtabs.push_back(tab);
 }
 
-void NotebookPanel::SaveCurrentTab()
+void NotebookPanel::SaveAllTab()
 {
-	TextboxTab* tab = GetCurrentTab();
-	tab->OnSaveFile();
+	for (const auto& t : Openedtabs) {
+		int index = notebook->GetPageIndex(t);
+		notebook->SetSelection(index);
+		t->OnSaveFile();
+	}
 }
 
-void NotebookPanel::SaveAsCurrentTab()
+void NotebookPanel::CloseCurrentTab()
 {
-	TextboxTab* tab = GetCurrentTab();
-	tab->OnSaveAsFile();
-}
-
-void NotebookPanel::SaveAllCurrentTab()
-{
+	int index = notebook->GetSelection();
+	if (index == wxNOT_FOUND) return;
+	notebook->DeletePage(index);
 }
 
 TextboxTab* NotebookPanel::GetCurrentTab()
 {
 	wxWindow* page = notebook->GetCurrentPage();
-	TextboxTab* tab = dynamic_cast<TextboxTab*>(page);
-	return tab;
+	return dynamic_cast<TextboxTab*>(page);
 }
 
-void NotebookPanel::OnNotebookTabClose(wxCommandEvent& e)
+void NotebookPanel::RemoveTab()
 {
 	TextboxTab* tab = GetCurrentTab();
 	if (tab) {
@@ -51,5 +53,4 @@ void NotebookPanel::OnNotebookTabClose(wxCommandEvent& e)
 			Openedtabs.end()
 		);
 	}
-	e.Skip();
 }

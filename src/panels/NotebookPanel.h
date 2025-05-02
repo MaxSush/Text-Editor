@@ -12,14 +12,14 @@ public:
 	NotebookPanel(wxWindow* parent);
 	void CreateNewTab(const wxString& filename);
 
-	void SaveCurrentTab();
-	void SaveAsCurrentTab();
-	void SaveAllCurrentTab();
+	void SaveAllTab();
+	void CloseCurrentTab();
+
+	TextboxTab* GetCurrentTab();
 
 private:
 	wxAuiNotebook* notebook;
 	std::vector<TextboxTab*> Openedtabs;
 
-	TextboxTab* GetCurrentTab();
-	void OnNotebookTabClose(wxCommandEvent& e);
+	void RemoveTab();
 };
