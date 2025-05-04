@@ -41,6 +41,7 @@ void NotebookPanel::CloseCurrentTab()
 	int index = notebook->GetSelection();
 	if (index == wxNOT_FOUND) return;
 	notebook->DeletePage(index);
+	RemoveTab();
 }
 
 TextboxTab* NotebookPanel::GetCurrentTab()

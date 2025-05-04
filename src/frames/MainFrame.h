@@ -4,36 +4,8 @@
 #include <wx/filehistory.h>
 
 #include "../panels/NotebookPanel.h"
-
-
-enum {
-    ID_NewTab = wxID_HIGHEST + 1,
-    ID_OpenFile,
-    ID_Save,
-    ID_SaveAs,
-    ID_SaveAll,
-    ID_CloseTab,
-    ID_Exit,
-    ID_Undo,
-    ID_Redo,
-    ID_Cut,
-    ID_Copy,
-    ID_Paste,
-    ID_Delete,
-
-    ID_Find,
-    ID_Replace,
-    ID_Font,
-    ID_SetFont,
-    ID_ResetFont,
-
-    ID_StatusBar,
-    ID_WordWrap,
-    ID_ZoomIn,
-    ID_ZoomOut,
-    ID_ZoomReset,
-    ID_ClearHistory
-};
+#include "../controls/StatusBar.h"
+#include "../controls/MenuBar.h"
 
 
 class MainFrame : public wxFrame
@@ -43,15 +15,13 @@ public:
     ~MainFrame();
 
 private:
-    NotebookPanel* notebookPanel;
-    wxMenuBar* menubar;
-	wxFileHistory* fileHistory = nullptr;
-    wxStatusBar* statusBar = nullptr;
+    StatusBar* statusBar = nullptr;
     bool isStatusbar = true;
+	wxFileHistory* fileHistory = nullptr;
+    MenuBar* menubar;
+    NotebookPanel* notebookPanel;
 
-	void CreateMenubar();
 	void BindMenubarActions();
-
 
 	void OnOpen(wxCommandEvent&);
 	void OnRecents(wxCommandEvent&);

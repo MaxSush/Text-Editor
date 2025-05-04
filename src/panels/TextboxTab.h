@@ -4,6 +4,7 @@
 #include <wx/stc/stc.h>
 #include <wx/aui/aui.h>
 #include <wx/config.h>
+#include "../controls/StatusBar.h"
 
 class TextboxTab : public wxPanel
 {
@@ -34,7 +35,7 @@ public:
 	void OnWordWrap(bool warp);
 
 private:
-	wxFrame* mainFrame = nullptr;
+	StatusBar* statusBar = nullptr;
 	wxStyledTextCtrl* editor;
 	std::string filepath;
 	std::string filename;

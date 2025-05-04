@@ -5,13 +5,18 @@ TextboxTab::TextboxTab(wxAuiNotebook* parent, const wxString& filename)
 	wxPanel(parent, wxID_ANY),
 	filename(filename)
 {
-	mainFrame = wxDynamicCast(wxGetTopLevelParent(this), wxFrame);
+	wxFrame* mainFrame = wxDynamicCast(wxGetTopLevelParent(this), wxFrame);
+	statusBar = wxDynamicCast(mainFrame->GetStatusBar(), StatusBar);
 
 	editor = new wxStyledTextCtrl(this, wxID_ANY);
 	editor->SetWrapMode(wxSTC_WRAP_WORD);
 
 	editor->Bind(wxEVT_STC_UPDATEUI, [&](wxStyledTextEvent&) {
 		UpdateStatusbar();
+		});
+	editor->Bind(wxEVT_STC_ZOOM, [&](wxStyledTextEvent&) {
+		int zoom = editor->GetZoom() * 10;
+		statusBar->SetZoom(zoom);
 		});
 	editor->Bind(wxEVT_STC_CHANGE, [&](wxStyledTextEvent&) {
 		isModified = true;
@@ -42,6 +47,14 @@ TextboxTab::TextboxTab(wxAuiNotebook* parent, const wxString& filename)
 	this->SetSizer(sizer);
 
 	parent->AddPage(this, this->filename, true);
+
+	wxString eolMode = "Unknown";
+	switch (editor->GetEOLMode()) {
+	case wxSTC_EOL_CRLF: eolMode = "Windows (CRLF)"; break;
+	case wxSTC_EOL_CR:   eolMode = "Mac (CR)"; break;
+	case wxSTC_EOL_LF:   eolMode = "Unix (LF)"; break;
+	}
+	statusBar->SetEOL(eolMode);
 }
 
 void TextboxTab::OnSaveFile()
@@ -146,7 +159,8 @@ void TextboxTab::UpdateStatusbar()
 {
 	int line = editor->GetCurrentLine() + 1;
 	int col = editor->GetColumn(editor->GetCurrentPos()) + 1;
-	mainFrame->SetStatusText(wxString::Format("Line: %d  Col: %d", line, col));
+	int charCount = editor->GetTextLength();
+	statusBar->UpdateInfo(line, col, charCount);
 }
 
 void TextboxTab::OnWordWrap(bool wrap)
