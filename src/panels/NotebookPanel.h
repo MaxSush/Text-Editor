@@ -14,11 +14,13 @@ public:
 
 	void SaveAllTab();
 	void CloseCurrentTab();
+	void OpenFile(const wxString filename, const wxString& filepath);
 
 	TextboxTab* currentTab = nullptr;
 
 private:
 	wxAuiNotebook* notebook;
+	// hashmap
 	std::vector<TextboxTab*> Openedtabs;
 
 	void RemoveTab();

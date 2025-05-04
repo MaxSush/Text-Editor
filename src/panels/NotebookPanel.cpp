@@ -44,6 +44,13 @@ void NotebookPanel::CloseCurrentTab()
 	RemoveTab();
 }
 
+void NotebookPanel::OpenFile(const wxString filename, const wxString& filepath)
+{
+	// dont duplicate open
+	CreateNewTab(filename);
+	currentTab->SetFileContents(filepath);
+}
+
 TextboxTab* NotebookPanel::GetCurrentTab()
 {
 	wxWindow* page = notebook->GetCurrentPage();

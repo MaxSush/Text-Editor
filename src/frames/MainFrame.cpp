@@ -1,6 +1,8 @@
 #include "MainFrame.h"
 #include <wx/config.h>
 #include <wx/fontdlg.h>
+#include <wx/filename.h>
+
 
 MainFrame::MainFrame(const std::string& name)
 	: wxFrame(NULL, wxID_ANY, name, wxDefaultPosition, { 900,700 }, wxCAPTION | wxCLOSE_BOX | wxMINIMIZE_BOX | wxMAXIMIZE_BOX | wxRESIZE_BORDER | wxNO_BORDER)
@@ -9,22 +11,23 @@ MainFrame::MainFrame(const std::string& name)
 	//icon.LoadFile("path/to/icon.ico", wxBITMAP_TYPE_ICO);  // Load icon from file
 	//this->SetIcon(icon);
 
-	statusBar = new StatusBar(this);
-	SetStatusBar(statusBar);
-	wxConfigBase* config = wxConfig::Get();
-	config->Read("StatusBar", &isStatusbar, true);
-	if (!isStatusbar)
-		statusBar->Hide();
-	Layout();
-
 	fileHistory = new wxFileHistory(10);
-
+	
 	menubar = new MenuBar(fileHistory);
 	SetMenuBar(menubar);
 	BindMenubarActions();
 
-	notebookPanel = new NotebookPanel(this);
+	statusBar = new StatusBar(this);
+	SetStatusBar(statusBar);
+	wxConfigBase* config = wxConfig::Get();
+	config->Read("StatusBar", &isStatusbar, true);
+	if (!isStatusbar){
+		statusBar->Hide();
+		SendSizeEvent();
+	}
+	menubar->Check(ID_StatusBar, isStatusbar);
 
+	notebookPanel = new NotebookPanel(this);
 }
 
 // Destructor
@@ -145,7 +148,8 @@ void MainFrame::OnOpen(wxCommandEvent& e)
 
 	if (openFileDialog.ShowModal() == wxID_OK) {
 		wxString filepath = openFileDialog.GetPath();
-		wxMessageBox("Opening: " + filepath);
+		wxString filename = openFileDialog.GetFilename();
+		notebookPanel->OpenFile(filename, filepath);
 		fileHistory->AddFileToHistory(filepath);
 		fileHistory->Save(*wxConfig::Get());
 	}
@@ -155,7 +159,12 @@ void MainFrame::OnRecents(wxCommandEvent& e)
 {
 	const auto historyId = e.GetId() - fileHistory->GetBaseId();
 	const wxString filepath = fileHistory->GetHistoryFile(historyId);
-	wxMessageBox("Opening: " + filepath);
+	wxFileName filename(filepath);
+	if (!filename.FileExists()) {
+		wxMessageBox("The file \"" + filepath + "\" does not exist.", "File Not Found", wxICON_ERROR);
+		return;
+	}
+	notebookPanel->OpenFile(filename.GetFullName(), filepath);
 }
 
 void MainFrame::OnClearRecents(wxCommandEvent& e)
@@ -187,8 +196,7 @@ void MainFrame::OnStatusbar(wxCommandEvent& e)
 {
 	bool show = e.IsChecked();
 	statusBar->Show(show);
-	Layout(); // Recalculate layout when showing/hiding
-
+	SendSizeEvent();
 	isStatusbar = show;
 
 	wxConfigBase* config = wxConfig::Get();

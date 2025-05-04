@@ -3,25 +3,14 @@
 TextboxTab::TextboxTab(wxAuiNotebook* parent, const wxString& filename)
 	:
 	wxPanel(parent, wxID_ANY),
-	filename(filename)
+	m_filename(filename)
 {
 	wxFrame* mainFrame = wxDynamicCast(wxGetTopLevelParent(this), wxFrame);
 	statusBar = wxDynamicCast(mainFrame->GetStatusBar(), StatusBar);
 
 	editor = new wxStyledTextCtrl(this, wxID_ANY);
+	BindActions();
 	editor->SetWrapMode(wxSTC_WRAP_WORD);
-
-	editor->Bind(wxEVT_STC_UPDATEUI, [&](wxStyledTextEvent&) {
-		UpdateStatusbar();
-		});
-	editor->Bind(wxEVT_STC_ZOOM, [&](wxStyledTextEvent&) {
-		int zoom = editor->GetZoom() * 10;
-		statusBar->SetZoom(zoom);
-		});
-	editor->Bind(wxEVT_STC_CHANGE, [&](wxStyledTextEvent&) {
-		isModified = true;
-		UpdateTabLabel();
-		});
 
 	{
 		wxString faceName;
@@ -35,7 +24,6 @@ TextboxTab::TextboxTab(wxAuiNotebook* parent, const wxString& filename)
 		config->Read("Font/Italic", &italic, false);
 		config->Read("Font/Italic", &italic, false);
 
-
 		wxFont font(pointSize, wxFONTFAMILY_MODERN, (italic) ? wxFONTSTYLE_ITALIC : wxFONTSTYLE_NORMAL, (bold) ? wxFONTWEIGHT_BOLD : wxFONTWEIGHT_NORMAL);
 		font.SetFaceName(faceName);
 		editor->StyleSetFont(wxSTC_STYLE_DEFAULT, font);
@@ -46,24 +34,23 @@ TextboxTab::TextboxTab(wxAuiNotebook* parent, const wxString& filename)
 	sizer->Add(editor, 1, wxEXPAND);
 	this->SetSizer(sizer);
 
-	parent->AddPage(this, this->filename, true);
+	parent->AddPage(this, m_filename, true);
 
-	wxString eolMode = "Unknown";
-	switch (editor->GetEOLMode()) {
-	case wxSTC_EOL_CRLF: eolMode = "Windows (CRLF)"; break;
-	case wxSTC_EOL_CR:   eolMode = "Mac (CR)"; break;
-	case wxSTC_EOL_LF:   eolMode = "Unix (LF)"; break;
-	}
-	statusBar->SetEOL(eolMode);
+	statusBar->SetEOL(editor->GetEOLMode());
+}
+
+TextboxTab::~TextboxTab()
+{
+	delete file;
 }
 
 void TextboxTab::OnSaveFile()
 {
-	if (filepath.empty())
+	if (m_filepath.empty())
 		OnSaveAsFile();
 	else
 		if (isModified)
-			SaveFile(filepath);
+			SaveFile();
 }
 
 void TextboxTab::OnSaveAsFile()
@@ -72,9 +59,25 @@ void TextboxTab::OnSaveAsFile()
 		"Text files (*.txt)|*.txt|All files (*.*)|*.*",
 		wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
 	if (saveDialog.ShowModal() == wxID_OK) {
-		filepath = saveDialog.GetPath();
-		filename = saveDialog.GetFilename();
-		SaveFile(filepath);
+		m_filepath = saveDialog.GetPath();
+		m_filename = saveDialog.GetFilename();
+		SaveFile();
+	}
+}
+
+void TextboxTab::SetFileContents(const wxString& filepath)
+{
+	file = new wxFile(filepath);
+	if (file->IsOpened()) {
+		wxString content;
+		file->ReadAll(&content);
+		suppressChangeEvent = true;
+		editor->SetValue(content);
+		suppressChangeEvent = false;
+		m_filepath = filepath;
+	}
+	else {
+		wxMessageBox("Failed to open file \"" + filepath + "\".", "File Open Error", wxICON_ERROR);
 	}
 }
 
@@ -168,11 +171,11 @@ void TextboxTab::OnWordWrap(bool wrap)
 	editor->SetWrapMode(wrap ? wxSTC_WRAP_WORD : wxSTC_WRAP_NONE);
 }
 
-void TextboxTab::SaveFile(const std::string& filepath)
+void TextboxTab::SaveFile()
 {
 	isModified = false;
 	UpdateTabLabel();
-	wxMessageBox("File Saved At: " + filepath);
+	wxMessageBox("File Saved At: " + m_filepath);
 }
 
 void TextboxTab::UpdateTabLabel()
@@ -184,9 +187,25 @@ void TextboxTab::UpdateTabLabel()
 	if (pageIndex == wxNOT_FOUND) return;
 
 	if (isModified) {
-		parentNotebook->SetPageText(pageIndex, "*" + filename);
+		parentNotebook->SetPageText(pageIndex, "*" + m_filename);
 	}
 	else {
-		parentNotebook->SetPageText(pageIndex, filename);
+		parentNotebook->SetPageText(pageIndex, m_filename);
 	}
+}
+
+void TextboxTab::BindActions()
+{
+	editor->Bind(wxEVT_STC_UPDATEUI, [&](wxStyledTextEvent&) {
+		UpdateStatusbar();
+		});
+	editor->Bind(wxEVT_STC_ZOOM, [&](wxStyledTextEvent&) {
+		int zoom = editor->GetZoom() * 10;
+		statusBar->SetZoom(zoom);
+		});
+	editor->Bind(wxEVT_STC_CHANGE, [&](wxStyledTextEvent&) {
+		if (suppressChangeEvent) return;
+		isModified = true;
+		UpdateTabLabel();
+		});
 }
