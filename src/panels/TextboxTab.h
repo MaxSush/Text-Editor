@@ -11,7 +11,6 @@ class TextboxTab : public wxPanel
 {
 public:
 	TextboxTab(wxAuiNotebook* parent, const wxString& filename);
-	~TextboxTab();
 
 	void OnSaveFile(); 
 	void OnSaveAsFile();
@@ -33,16 +32,14 @@ public:
 	void OnFind();
 	void OnReplace();
 
-
 	void UpdateStatusbar();
 	void OnWordWrap(bool warp);
-
+	std::string GetFilepath() const;
 private:
 	StatusBar* statusBar = nullptr;
 	wxStyledTextCtrl* editor;
 	std::string m_filepath;
 	std::string m_filename;
-	wxFile* file = nullptr;
 	bool isModified = false;
 	bool suppressChangeEvent = false;
 

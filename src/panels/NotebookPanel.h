@@ -20,7 +20,6 @@ public:
 
 private:
 	wxAuiNotebook* notebook;
-	// hashmap
 	std::vector<TextboxTab*> Openedtabs;
 
 	void RemoveTab();

@@ -136,6 +136,8 @@ void MainFrame::BindMenubarActions()
 
 	// StatusBar
 	Bind(wxEVT_MENU, &MainFrame::OnStatusbar, this,  ID_StatusBar);
+
+	// Word Wrap
 	Bind(wxEVT_MENU, [&](wxCommandEvent& e) {
 		notebookPanel->currentTab->OnWordWrap(e.IsChecked());
 		}, ID_WordWrap);

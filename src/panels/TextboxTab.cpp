@@ -39,11 +39,6 @@ TextboxTab::TextboxTab(wxAuiNotebook* parent, const wxString& filename)
 	statusBar->SetEOL(editor->GetEOLMode());
 }
 
-TextboxTab::~TextboxTab()
-{
-	delete file;
-}
-
 void TextboxTab::OnSaveFile()
 {
 	if (m_filepath.empty())
@@ -67,10 +62,10 @@ void TextboxTab::OnSaveAsFile()
 
 void TextboxTab::SetFileContents(const wxString& filepath)
 {
-	file = new wxFile(filepath);
-	if (file->IsOpened()) {
+	wxFile file(filepath);
+	if (file.IsOpened()) {
 		wxString content;
-		file->ReadAll(&content);
+		file.ReadAll(&content);
 		suppressChangeEvent = true;
 		editor->SetValue(content);
 		suppressChangeEvent = false;
@@ -171,11 +166,21 @@ void TextboxTab::OnWordWrap(bool wrap)
 	editor->SetWrapMode(wrap ? wxSTC_WRAP_WORD : wxSTC_WRAP_NONE);
 }
 
+std::string TextboxTab::GetFilepath() const
+{
+	return m_filepath;
+}
+
 void TextboxTab::SaveFile()
 {
 	isModified = false;
 	UpdateTabLabel();
-	wxMessageBox("File Saved At: " + m_filepath);
+	wxFile file(m_filepath, wxFile::write);
+	if (file.IsOpened()) {
+		wxString contents = editor->GetValue();
+		file.Write(contents);
+		wxMessageBox("File Saved At: " + m_filepath);
+	}
 }
 
 void TextboxTab::UpdateTabLabel()

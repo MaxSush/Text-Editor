@@ -38,6 +38,7 @@ void StatusBar::SetEOL(int eol)
 void StatusBar::SetZoom(int zoom = 100)
 {
     SetStatusText(wxString::Format("%d%%", 100 + zoom), ZOOM);
+    Refresh();
 }
 
 void StatusBar::UpdateInfo(int line, int col, int charCount)
@@ -46,5 +47,6 @@ void StatusBar::UpdateInfo(int line, int col, int charCount)
     SetStatusText(wxString::Format("%d characters", charCount), CHARS);
     SetStatusText(eolMode, LINE_ENDINGS);
     SetStatusText("UTF-8", ENCODING);
+    Refresh();
 }
 

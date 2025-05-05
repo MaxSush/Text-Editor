@@ -1,5 +1,7 @@
 #include "NotebookPanel.h"
 
+#include <wx/filename.h>
+
 NotebookPanel::NotebookPanel(wxWindow* parent)
 	: wxPanel(parent, wxID_ANY)
 {
@@ -46,7 +48,18 @@ void NotebookPanel::CloseCurrentTab()
 
 void NotebookPanel::OpenFile(const wxString filename, const wxString& filepath)
 {
-	// dont duplicate open
+	wxFileName fn1(filepath);
+	fn1.Normalize(wxPATH_NORM_ALL);
+	for (const auto& tab : Openedtabs) {
+		wxFileName fn2(tab->GetFilepath());
+		fn2.Normalize(wxPATH_NORM_ALL);
+		if (fn1.SameAs(fn2)){
+			int index = notebook->GetPageIndex(tab);
+			notebook->SetSelection(index);
+			return;
+		}
+	}
+
 	CreateNewTab(filename);
 	currentTab->SetFileContents(filepath);
 }
